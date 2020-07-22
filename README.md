@@ -36,6 +36,17 @@ proxy.X = 20; // Error!
 // Get properties
 Console.WriteLine($@"Y: {proxy.Y}"); // Works good
 Console.WriteLine($@"X: {proxy.X}, Y: {proxy.Y}"); // Error! You have not access to property X
+
+// Access trough reflection
+var proxy2 = factory.CreateProxy(myObject);
+Type proxyType = proxy2.GetType();
+foreach (PropertyInfo property in proxyType.GetProperties())
+{
+    string propertyName = property.Name;
+    property.SetValue(proxy2, 20);
+    string propertyValue = property.GetValue(proxy2).ToString();
+    Console.WriteLine($@"{propertyName} = {propertyValue}"); // You will see only "Y = 20"
+}
 ```
 
 ## License
