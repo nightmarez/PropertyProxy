@@ -1,6 +1,8 @@
 # PropertyProxy
 A simple way to create proxy objects
 
+![Cheme](proxy.png)
+
 ✍✍✍ **Feedback is welcome** ✅✅✅
 
 💚💚💚 **Stars are welcome** 💚💚💚
