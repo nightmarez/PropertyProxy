@@ -29,8 +29,13 @@ Now you can create proxies for your MyClass's objects
 var myObject = new MyClass();
 dynamic proxy = factory.CreateProxy(myObject);
 
+// Set properties
 proxy.Y = 10; // Has access! myObject.Y will set to 10
 proxy.X = 20; // Error!
+
+// Get properties
+Console.WriteLine($@"Y: {proxy.Y}"); // Works good
+Console.WriteLine($@"X: {proxy.X}, Y: {proxy.Y}"); // Error! You have not access to property X
 ```
 
 ## License
