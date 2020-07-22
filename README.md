@@ -49,6 +49,16 @@ foreach (PropertyInfo property in proxyType.GetProperties())
 }
 ```
 
+You can optimize proxy types generation by calling previously method `GenerateFor` with types or object what proxy you want generate for
+```csharp
+// For types:
+factory.GenerateFor(MyClass1, MyClass2, typeof(objectOfMyClass3));
+
+// For objects:
+factory.GenerateFor(objectOfMyClass1, objectOfMyClass2, objectOfMyClass3);
+```
+When you calling `GenerateFor` method, there is will be created one dynamic assembly for all enumerated types or objects
+
 ## License
 
 The sources is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
