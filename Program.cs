@@ -15,12 +15,13 @@ namespace PropertyProxy
     {
         static void Main()
         {
+            var factory = new PropertyProxyFactory();
             var test = new Test();
 
-            dynamic proxy1 = PropertyProxyFactory.CreateProxy(test);
+            dynamic proxy1 = factory.CreateProxy(test);
             proxy1.X = 10;
 
-            dynamic proxy2 = PropertyProxyFactory.CreateProxy(test);
+            dynamic proxy2 = factory.CreateProxy(test);
             proxy2.Y = 20;
 
             Console.WriteLine($@"X: {test.X}, Y: {test.Y}");

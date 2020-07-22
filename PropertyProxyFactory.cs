@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -6,24 +7,32 @@ public class PropertyProxyFactory
 {
     public sealed class PropertyProxyAttribute: Attribute { }
 
-    private static int _counter;
+    private int _counter;
+    private Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
-    private static string GenAssemblyName()
+    private string GenAssemblyName()
     {
         return $@"ProxyAssembly-{Guid.NewGuid()}-{++_counter}.dll";
     }
 
-    private static string GenProxyTypeName(Type sourceType)
+    private string GenProxyTypeName(Type sourceType)
     {
         return $@"{sourceType.Name}-Proxy-{Guid.NewGuid()}-{++_counter}";
     }
 
-    public static object CreateProxy(object source)
+    public object CreateProxy(object source)
     {
+        Type sourceType = source.GetType();
+        string sourceTypeName = sourceType.AssemblyQualifiedName ?? string.Empty;
+
+        if (_types.ContainsKey(sourceTypeName))
+        {
+            return Activator.CreateInstance(_types[sourceTypeName], source);
+        }
+
         var assemblyName = new AssemblyName(GenAssemblyName());
         AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
         ModuleBuilder moduleBuilder = assembly.DefineDynamicModule(assemblyName.Name);
-        Type sourceType = source.GetType();
         TypeBuilder typeBuilder = moduleBuilder.DefineType(GenProxyTypeName(sourceType), TypeAttributes.Class | TypeAttributes.Public, typeof(object));
         FieldBuilder ownerField = typeBuilder.DefineField("_owner", sourceType, FieldAttributes.Private);
 
@@ -77,6 +86,7 @@ public class PropertyProxyFactory
         ilGen.Emit(OpCodes.Ret);
 
         Type type = typeBuilder.CreateType();
+        _types.Add(sourceTypeName, type);
         return Activator.CreateInstance(type, source);
     }
 }
