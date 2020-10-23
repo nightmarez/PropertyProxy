@@ -51,8 +51,14 @@ foreach (PropertyInfo property in proxyType.GetProperties())
 }
 ```
 
-Using through interface:
+Using through interface (you don't need use attributes for this reason):
 ```csharp
+class MyClass
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+}
+
 public IMyInterface
 {
     int Y { get; set; }
