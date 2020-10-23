@@ -49,6 +49,22 @@ foreach (PropertyInfo property in proxyType.GetProperties())
 }
 ```
 
+Using through interface:
+```csharp
+public IMyInterface
+{
+    int Y { get; set; }
+}
+
+// ...
+
+IMyInterface proxy3 = factory.CreateProxy<IMyInterface>(myObject);
+proxy3.Y = 30; // Has access!
+
+// You can't get access to property X anyway
+Console.WriteLine($@"X = {proxy3.GetType().GetProperty("X")!.GetValue(proxy3)}"); // Error
+```
+
 You can optimize proxy types generation by calling previously method `GenerateFor` with types or object what proxy you want generate for
 ```csharp
 // For types:
