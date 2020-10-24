@@ -59,7 +59,7 @@ class MyClass
     public int Y { get; set; }
 }
 
-public IMyInterface
+interface IMyInterface
 {
     int Y { get; set; }
 }
