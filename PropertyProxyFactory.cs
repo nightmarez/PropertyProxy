@@ -13,15 +13,15 @@ public class PropertyProxyFactory
 
     private string GenAssemblyName()
     {
-        return $@"ProxyAssembly-{Guid.NewGuid()}-{++_counter}.dll";
+        return $"ProxyAssembly-{Guid.NewGuid()}-{++_counter}.dll";
     }
 
     private string GenProxyTypeName(Type sourceType)
     {
-        return $@"{sourceType.Name}-Proxy-{Guid.NewGuid()}-{++_counter}";
+        return $"{sourceType.Name}-Proxy-{Guid.NewGuid()}-{++_counter}";
     }
 
-    private void InnerGenerateFor(Type[] types, Type[] interfaces = null)
+    private void InnerGenerateFor(IReadOnlyList<Type> types, IReadOnlyList<Type> interfaces = null)
     {
         if (types
             .Select(t => t.AssemblyQualifiedName ?? string.Empty)
@@ -34,7 +34,7 @@ public class PropertyProxyFactory
         AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
         ModuleBuilder moduleBuilder = assembly.DefineDynamicModule(assemblyName.Name);
 
-        for (int i = 0; i < types.Length; ++i)
+        for (int i = 0; i < types.Count; ++i)
         {
             var sourceType = types[i];
             string sourceTypeName = sourceType.AssemblyQualifiedName ?? string.Empty;
@@ -44,11 +44,13 @@ public class PropertyProxyFactory
                 continue;
             }
 
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(GenProxyTypeName(sourceType),
-                TypeAttributes.Class | TypeAttributes.Public, typeof(object));
+            TypeBuilder typeBuilder = moduleBuilder.DefineType(
+                GenProxyTypeName(sourceType),
+                TypeAttributes.Class | TypeAttributes.Public,
+                typeof(object));
             Type interfaceType = null;
 
-            if (interfaces != null && i < interfaces.Length)
+            if (interfaces is {} && i < interfaces.Count)
             {
                 interfaceType = interfaces[i];
                 typeBuilder.AddInterfaceImplementation(interfaceType);
@@ -57,36 +59,33 @@ public class PropertyProxyFactory
             FieldBuilder ownerField = typeBuilder.DefineField("_owner", sourceType, FieldAttributes.Private);
             var proxyProperties = new List<PropertyInfo>();
 
-            if (interfaceType != null)
+            if (interfaceType is {})
             {
-                PropertyInfo[] sourceTypeProperties = sourceType.GetProperties();
-                foreach (PropertyInfo interfaceProperty in interfaceType.GetProperties())
-                    foreach (PropertyInfo prop in sourceTypeProperties)
-                        if (interfaceProperty.Name == prop.Name)
-                        {
-                            proxyProperties.Add(prop);
-                            break;
-                        }
+                PropertyInfo[] interfaceProperties = interfaceType.GetProperties();
+
+                proxyProperties.AddRange(
+                    sourceType
+                        .GetProperties()
+                        .Where(prop => interfaceProperties.Any(interfaceProperty => interfaceProperty.Name == prop.Name)));
             }
             else
             {
-                foreach (PropertyInfo prop in sourceType.GetProperties())
-                    foreach (object attribute in prop.GetCustomAttributes(true))
-                        if (attribute is PropertyProxyAttribute)
-                        {
-                            proxyProperties.Add(prop);
-                            break;
-                        }
+                proxyProperties.AddRange(
+                    sourceType
+                        .GetProperties()
+                        .Where(prop => prop.GetCustomAttributes(true).Any(attribute => attribute is PropertyProxyAttribute)));
             }
 
             foreach (PropertyInfo prop in proxyProperties)
             {
-                PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(prop.Name,
+                PropertyBuilder propertyBuilder = typeBuilder.DefineProperty(
+                    prop.Name,
                     PropertyAttributes.HasDefault,
                     prop.PropertyType,
                     null);
 
-                MethodBuilder methodGet = typeBuilder.DefineMethod($"get_{prop.Name}",
+                MethodBuilder methodGet = typeBuilder.DefineMethod(
+                    $"get_{prop.Name}",
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     prop.PropertyType,
                     new Type[] { });
@@ -99,7 +98,8 @@ public class PropertyProxyFactory
                 ilGet.EmitCall(OpCodes.Callvirt, prop.GetGetMethod(), null);
                 ilGet.Emit(OpCodes.Ret);
 
-                MethodBuilder methodSet = typeBuilder.DefineMethod($"set_{prop.Name}",
+                MethodBuilder methodSet = typeBuilder.DefineMethod(
+                    $"set_{prop.Name}",
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     null,
                     new[] {prop.PropertyType});
@@ -116,7 +116,7 @@ public class PropertyProxyFactory
                 propertyBuilder.SetGetMethod(methodGet);
                 propertyBuilder.SetSetMethod(methodSet);
 
-                if (interfaceType != null)
+                if (interfaceType is {})
                 {
                     var originalGetter = interfaceType.GetMethod($"get_{prop.Name}");
                     var originalSetter = interfaceType.GetMethod($"set_{prop.Name}");
@@ -125,8 +125,10 @@ public class PropertyProxyFactory
                 }
             }
 
-            ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public,
-                CallingConventions.Standard, new[] {typeof(object)});
+            ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(
+                MethodAttributes.Public,
+                CallingConventions.Standard,
+                new[] {typeof(object)});
             ILGenerator ilGen = constructorBuilder.GetILGenerator();
 
             ilGen.Emit(OpCodes.Ldarg_0);
