@@ -9,17 +9,16 @@ public class PropertyProxyFactory
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class PropertyProxyAttribute : Attribute { }
 
-    private int _counter;
     private readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
 
     private string GenAssemblyName()
     {
-        return $"ProxyAssembly-{Guid.NewGuid()}-{++_counter}.dll";
+        return $"ProxyAssembly-{Guid.NewGuid()}.dll";
     }
 
     private string GenProxyTypeName(Type sourceType)
     {
-        return $"{sourceType.Name}-Proxy-{Guid.NewGuid()}-{++_counter}";
+        return $"{sourceType.Name}-Proxy-{Guid.NewGuid()}";
     }
 
     private void InnerGenerateFor(IReadOnlyList<Type> types, IReadOnlyList<Type> interfaces = null)
