@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 
 public class PropertyProxyFactory
 {
+    [AttributeUsage(AttributeTargets.Property)]
     public sealed class PropertyProxyAttribute : Attribute { }
 
     private int _counter;
@@ -50,7 +51,7 @@ public class PropertyProxyFactory
                 typeof(object));
             Type interfaceType = null;
 
-            if (interfaces is {} && i < interfaces.Count)
+            if (interfaces is { } && i < interfaces.Count)
             {
                 interfaceType = interfaces[i];
                 typeBuilder.AddInterfaceImplementation(interfaceType);
@@ -59,7 +60,7 @@ public class PropertyProxyFactory
             FieldBuilder ownerField = typeBuilder.DefineField("_owner", sourceType, FieldAttributes.Private);
             var proxyProperties = new List<PropertyInfo>();
 
-            if (interfaceType is {})
+            if (interfaceType is { })
             {
                 PropertyInfo[] interfaceProperties = interfaceType.GetProperties();
 
@@ -102,7 +103,7 @@ public class PropertyProxyFactory
                     $"set_{prop.Name}",
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     null,
-                    new[] {prop.PropertyType});
+                    new[] { prop.PropertyType });
 
                 methodSet.SetImplementationFlags(MethodImplAttributes.IL);
                 ILGenerator ilSet = methodSet.GetILGenerator();
@@ -110,13 +111,13 @@ public class PropertyProxyFactory
                 ilSet.Emit(OpCodes.Ldarg_0);
                 ilSet.Emit(OpCodes.Ldfld, ownerField);
                 ilSet.Emit(OpCodes.Ldarg_1);
-                ilSet.EmitCall(OpCodes.Callvirt, prop.GetSetMethod(), new[] {prop.PropertyType});
+                ilSet.EmitCall(OpCodes.Callvirt, prop.GetSetMethod(), new[] { prop.PropertyType });
                 ilSet.Emit(OpCodes.Ret);
 
                 propertyBuilder.SetGetMethod(methodGet);
                 propertyBuilder.SetSetMethod(methodSet);
 
-                if (interfaceType is {})
+                if (interfaceType is { })
                 {
                     var originalGetter = interfaceType.GetMethod($"get_{prop.Name}");
                     var originalSetter = interfaceType.GetMethod($"set_{prop.Name}");
@@ -128,7 +129,7 @@ public class PropertyProxyFactory
             ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(
                 MethodAttributes.Public,
                 CallingConventions.Standard,
-                new[] {typeof(object)});
+                new[] { typeof(object) });
             ILGenerator ilGen = constructorBuilder.GetILGenerator();
 
             ilGen.Emit(OpCodes.Ldarg_0);
@@ -163,7 +164,7 @@ public class PropertyProxyFactory
     public T CreateProxy<T>(object source)
     {
         Type sourceType = source.GetType();
-        InnerGenerateFor(new[] { sourceType }, new [] { typeof(T)});
+        InnerGenerateFor(new[] { sourceType }, new[] { typeof(T) });
         string sourceTypeName = sourceType.AssemblyQualifiedName ?? string.Empty;
         return (T)Activator.CreateInstance(_types[sourceTypeName], source);
     }
