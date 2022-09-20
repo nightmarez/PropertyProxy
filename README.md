@@ -21,15 +21,10 @@ class MyClass
 }
 ```
 
-Create proxy factory
-```csharp
-var factory = new PropertyProxyFactory();
-```
-
-Now you can create proxies for your MyClass's objects
+You can create proxies for your MyClass's objects
 ```csharp
 var myObject = new MyClass();
-dynamic proxy = factory.CreateProxy(myObject);
+dynamic proxy = PropertyProxyFactory.Instance.CreateProxy(myObject);
 
 // Set properties
 proxy.Y = 10; // Has access! myObject.Y will set to 10
@@ -40,7 +35,7 @@ Console.WriteLine($@"Y: {proxy.Y}"); // Works good
 Console.WriteLine($@"X: {proxy.X}, Y: {proxy.Y}"); // Error! You have not access to property X
 
 // Access trough reflection
-var proxy2 = factory.CreateProxy(myObject);
+var proxy2 = PropertyProxyFactory.Instance.CreateProxy(myObject);
 Type proxyType = proxy2.GetType();
 foreach (PropertyInfo property in proxyType.GetProperties())
 {
@@ -66,7 +61,7 @@ interface IMyInterface
 
 // ...
 
-IMyInterface proxy3 = factory.CreateProxy<IMyInterface>(myObject);
+IMyInterface proxy3 = PropertyProxyFactory.Instance.CreateProxy<IMyInterface>(myObject);
 proxy3.Y = 30; // Has access!
 
 // You can't get access to property X anyway
@@ -76,10 +71,10 @@ Console.WriteLine($@"X = {proxy3.GetType().GetProperty("X")!.GetValue(proxy3)}")
 You can optimize proxy types generation by calling previously method `GenerateFor` with types or object what proxy you want generate for
 ```csharp
 // For types:
-factory.GenerateFor(MyClass1, MyClass2, typeof(objectOfMyClass3));
+PropertyProxyFactory.Instance.GenerateFor(MyClass1, MyClass2, typeof(objectOfMyClass3));
 
 // For objects:
-factory.GenerateFor(objectOfMyClass1, objectOfMyClass2, objectOfMyClass3);
+PropertyProxyFactory.Instance.GenerateFor(objectOfMyClass1, objectOfMyClass2, objectOfMyClass3);
 ```
 When you calling `GenerateFor` method, there is will be created one dynamic assembly for all enumerated types or objects
 
