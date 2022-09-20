@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Reflection.Emit;
 
 public class PropertyProxyFactory
@@ -9,14 +6,14 @@ public class PropertyProxyFactory
     [AttributeUsage(AttributeTargets.Property)]
     public sealed class PropertyProxyAttribute : Attribute { }
 
-    private readonly Dictionary<string, Type> _types = new Dictionary<string, Type>();
+    private readonly Dictionary<string, Type> _types = new();
 
-    private string GenAssemblyName()
+    private static string GenAssemblyName()
     {
         return $"ProxyAssembly-{Guid.NewGuid()}.dll";
     }
 
-    private string GenProxyTypeName(Type sourceType)
+    private static string GenProxyTypeName(Type sourceType)
     {
         return $"{sourceType.Name}-Proxy-{Guid.NewGuid()}";
     }
@@ -31,8 +28,8 @@ public class PropertyProxyFactory
         }
 
         var assemblyName = new AssemblyName(GenAssemblyName());
-        AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
-        ModuleBuilder moduleBuilder = assembly.DefineDynamicModule(assemblyName.Name);
+        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+        ModuleBuilder moduleBuilder = assembly.DefineDynamicModule(assemblyName.Name!);
 
         for (int i = 0; i < types.Count; ++i)
         {
@@ -167,4 +164,10 @@ public class PropertyProxyFactory
         string sourceTypeName = sourceType.AssemblyQualifiedName ?? string.Empty;
         return (T)Activator.CreateInstance(_types[sourceTypeName], source);
     }
+
+    private static PropertyProxyFactory? _instance;
+
+    public static PropertyProxyFactory Instance => _instance ??= new PropertyProxyFactory();
+
+    private PropertyProxyFactory() { }
 }
