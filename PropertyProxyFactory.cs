@@ -18,7 +18,7 @@ public class PropertyProxyFactory
         return $"{sourceType.Name}-Proxy-{Guid.NewGuid()}";
     }
 
-    private void InnerGenerateFor(IReadOnlyList<Type> types, IReadOnlyList<Type> interfaces = null)
+    private void InnerGenerateFor(IReadOnlyList<Type> types, IReadOnlyList<Type> interfaces = null!)
     {
         if (types
             .Select(t => t.AssemblyQualifiedName ?? string.Empty)
@@ -28,12 +28,12 @@ public class PropertyProxyFactory
         }
 
         var assemblyName = new AssemblyName(GenAssemblyName());
-        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
         ModuleBuilder moduleBuilder = assembly.DefineDynamicModule(assemblyName.Name!);
 
         for (int i = 0; i < types.Count; ++i)
         {
-            var sourceType = types[i];
+            Type sourceType = types[i];
             string sourceTypeName = sourceType.AssemblyQualifiedName ?? string.Empty;
 
             if (_types.ContainsKey(sourceTypeName))
@@ -45,9 +45,9 @@ public class PropertyProxyFactory
                 GenProxyTypeName(sourceType),
                 TypeAttributes.Class | TypeAttributes.Public,
                 typeof(object));
-            Type interfaceType = null;
+            Type? interfaceType = null;
 
-            if (interfaces is { } && i < interfaces.Count)
+            if (interfaces is not null && i < interfaces.Count)
             {
                 interfaceType = interfaces[i];
                 typeBuilder.AddInterfaceImplementation(interfaceType);
@@ -56,7 +56,7 @@ public class PropertyProxyFactory
             FieldBuilder ownerField = typeBuilder.DefineField("_owner", sourceType, FieldAttributes.Private);
             var proxyProperties = new List<PropertyInfo>();
 
-            if (interfaceType is { })
+            if (interfaceType is not null)
             {
                 PropertyInfo[] interfaceProperties = interfaceType.GetProperties();
 
@@ -92,7 +92,7 @@ public class PropertyProxyFactory
 
                 ilGet.Emit(OpCodes.Ldarg_0);
                 ilGet.Emit(OpCodes.Ldfld, ownerField);
-                ilGet.EmitCall(OpCodes.Callvirt, prop.GetGetMethod(), null);
+                ilGet.EmitCall(OpCodes.Callvirt, prop.GetGetMethod()!, null);
                 ilGet.Emit(OpCodes.Ret);
 
                 MethodBuilder methodSet = typeBuilder.DefineMethod(
@@ -107,13 +107,13 @@ public class PropertyProxyFactory
                 ilSet.Emit(OpCodes.Ldarg_0);
                 ilSet.Emit(OpCodes.Ldfld, ownerField);
                 ilSet.Emit(OpCodes.Ldarg_1);
-                ilSet.EmitCall(OpCodes.Callvirt, prop.GetSetMethod(), new[] { prop.PropertyType });
+                ilSet.EmitCall(OpCodes.Callvirt, prop.GetSetMethod()!, new[] { prop.PropertyType });
                 ilSet.Emit(OpCodes.Ret);
 
                 propertyBuilder.SetGetMethod(methodGet);
                 propertyBuilder.SetSetMethod(methodSet);
 
-                if (interfaceType is { })
+                if (interfaceType is not null)
                 {
                     var originalGetter = interfaceType.GetMethod($"get_{prop.Name}");
                     var originalSetter = interfaceType.GetMethod($"set_{prop.Name}");
@@ -134,7 +134,7 @@ public class PropertyProxyFactory
 
             ilGen.Emit(OpCodes.Ret);
 
-            Type type = typeBuilder.CreateType();
+            Type type = typeBuilder.CreateType()!;
             _types.Add(sourceTypeName, type);
         }
     }
@@ -154,7 +154,7 @@ public class PropertyProxyFactory
         Type sourceType = source.GetType();
         GenerateFor(sourceType);
         string sourceTypeName = sourceType.AssemblyQualifiedName ?? string.Empty;
-        return Activator.CreateInstance(_types[sourceTypeName], source);
+        return Activator.CreateInstance(_types[sourceTypeName], source)!;
     }
 
     public T CreateProxy<T>(object source)
@@ -162,7 +162,7 @@ public class PropertyProxyFactory
         Type sourceType = source.GetType();
         InnerGenerateFor(new[] { sourceType }, new[] { typeof(T) });
         string sourceTypeName = sourceType.AssemblyQualifiedName ?? string.Empty;
-        return (T)Activator.CreateInstance(_types[sourceTypeName], source);
+        return (T)Activator.CreateInstance(_types[sourceTypeName], source)!;
     }
 
     private static PropertyProxyFactory? _instance;
